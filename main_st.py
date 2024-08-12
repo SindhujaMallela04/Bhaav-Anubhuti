@@ -87,7 +87,7 @@ def main():
             "ta": "ta-IN", "ur": "ur-IN", "gu": "gu-IN", "kn": "kn-IN",
             "ml": "ml-IN", "pa": "pa-IN", "or": "or-IN", "as": "as-IN"
         }
-        language_code = language_code_map.get(language, 'ur-IN')  # Default to Hindi if unknown
+        language_code = language_code_map.get(language, 'te-IN')  # Default to Hindi if unknown
 
         # Transcribe the audio again with the identified language
         text = transcribe_audio("uploaded_audio.wav", language_code)
