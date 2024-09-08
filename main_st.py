@@ -1,4 +1,26 @@
 import streamlit as st
+import base64
+
+# Function to load and display background image
+def add_bg_from_local(image_file):
+    with open(image_file, "rb") as image_file:
+        encoded_string = base64.b64encode(image_file.read()).decode()
+    st.markdown(
+        f"""
+        <style>
+        .stApp {{
+            background-image: url(data:image/png;base64,{encoded_string});
+            background-size: cover;
+            background-position: center;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+# function call to set the background
+add_bg_from_local('final.png') 
+
 import speech_recognition as sr
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 import torch
@@ -6,11 +28,10 @@ from langdetect import detect
 from pydub import AudioSegment
 from pydub.utils import which
 
-# Ensure pydub uses the correct path to FFmpeg executables
 AudioSegment.converter = which("ffmpeg")
 AudioSegment.ffprobe = which("ffprobe")
 
-# Load models for sentiment analysis
+# Loading models for sentiment analysis
 models = {
     "hi": ("ai4bharat/indic-bert", "positive", "negative"),  # Hindi
     "bn": ("ai4bharat/indic-bert", "positive", "negative"),  # Bengali
@@ -36,11 +57,11 @@ def transcribe_audio(file_path, language_code='en-US'):
     recognizer = sr.Recognizer()
     audio = AudioSegment.from_file(file_path)
     audio = audio.set_frame_rate(16000)
-    # Export the audio as a WAV file for better compatibility
+    # Exporting as a WAV file
     audio.export("temp.wav", format="wav")
     with sr.AudioFile("temp.wav") as source:
         audio_data = recognizer.record(source)
-        # Specify the language code for transcription
+        # Specifying the language code for transcription
         text = recognizer.recognize_google(audio_data, language=language_code)
     return text
 
@@ -57,14 +78,13 @@ def analyze_sentiment(text, model, tokenizer):
     
     # Debugging output
     st.write(f"Text: {text}")
-    st.write(f"Logits: {logits}")
-    st.write(f"Probabilities: {probabilities}")
-    st.write(f"Sentiment: {sentiment}")
-    
+    #st.write(f"Logits: {logits}")
+    #st.write(f"Probabilities: {probabilities}")
+    st.write(f"Sentiment: {sentiment}")    
     return sentiment
 
 def main():
-    st.title("Multilingual Sentiment Analysis from Audio")
+    st.title("Bhaav Anubhuti – A Multilingual Audio Sentiment Analysis")
     
     audio_file = st.file_uploader("Upload an audio file", type=["mp3", "wav", "m4a"])
     
@@ -74,32 +94,36 @@ def main():
         
         st.audio("uploaded_audio.wav")
         
-        # Initially transcribe the audio assuming it's in the most likely language (English for now)
         initial_text = transcribe_audio("uploaded_audio.wav", 'en-US')
-        st.write(f"Initial text: {initial_text}")
-
-        # Identify the language of the transcribed text
+        #st.write(f"Initial text: {initial_text}")
+        
         language = identify_language(initial_text)
 
-        # Get the appropriate language code for the identified language
         language_code_map = {
             "hi": "hi-IN", "bn": "bn-IN", "te": "te-IN", "mr": "mr-IN",
             "ta": "ta-IN", "ur": "ur-IN", "gu": "gu-IN", "kn": "kn-IN",
             "ml": "ml-IN", "pa": "pa-IN", "or": "or-IN", "as": "as-IN"
         }
-        language_code = language_code_map.get(language, 'te-IN')  # Default to Hindi if unknown
+        language_code = language_code_map.get(language, 'kn-IN') 
 
-        # Transcribe the audio again with the identified language
         text = transcribe_audio("uploaded_audio.wav", language_code)
+        st.markdown('<div class="content-box">', unsafe_allow_html=True)
         st.write(f"Transcribed text: {text}")
 
-        # Load the appropriate model for sentiment analysis
+        # Loading appropriate model for sentiment analysis
         model, tokenizer = load_model(language)
         sentiment = analyze_sentiment(text, model, tokenizer)
         sentiment_label = "positive" if sentiment == 1 else "negative"
         st.write(f"Detected language: {language}")
         st.write(f"Text: {text}")
-        st.write(f"Sentiment: {sentiment_label}")
+        #st.write(f"Sentiment: {sentiment_label}")
+        
+        if sentiment_label == "positive":
+            st.success(f"Sentiment: {sentiment_label}")
+            st.balloons()
+        else:
+            st.error(f"Sentiment: {sentiment_label}")
+        st.markdown('</div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
