@@ -28,6 +28,7 @@ from langdetect import detect
 from pydub import AudioSegment
 from pydub.utils import which
 
+
 AudioSegment.converter = which("ffmpeg")
 AudioSegment.ffprobe = which("ffprobe")
 
@@ -104,7 +105,7 @@ def main():
             "ta": "ta-IN", "ur": "ur-IN", "gu": "gu-IN", "kn": "kn-IN",
             "ml": "ml-IN", "pa": "pa-IN", "or": "or-IN", "as": "as-IN"
         }
-        language_code = language_code_map.get(language, 'kn-IN') 
+        language_code = language_code_map.get(language, 'te-IN') 
 
         text = transcribe_audio("uploaded_audio.wav", language_code)
         st.markdown('<div class="content-box">', unsafe_allow_html=True)
@@ -120,6 +121,8 @@ def main():
         
         if sentiment_label == "positive":
             st.success(f"Sentiment: {sentiment_label}")
+            emotions = te.get_emotion(text)
+            st.write(f"Emotions: {emotions}")
             st.balloons()
         else:
             st.error(f"Sentiment: {sentiment_label}")
