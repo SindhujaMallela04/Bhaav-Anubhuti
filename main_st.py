@@ -47,7 +47,7 @@ models = {
 def load_model(language_code):
     model_name, pos_label, neg_label = models.get(language_code, models["hi"])  #default to Hindi
     model = AutoModelForSequenceClassification.from_pretrained(model_name)
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False)  # Use slow tokenizer
     return model, tokenizer
 
 def transcribe_audio(file_path, language_code='en-US'):
