@@ -1,7 +1,16 @@
 import streamlit as st
 import base64
+import speech_recognition as sr
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
+import torch
+from pydub import AudioSegment
+from pydub.utils import which
+from googletrans import Translator
 
-# Function to load and display background image
+# Set up audio segment
+AudioSegment.converter = which("ffmpeg")
+AudioSegment.ffprobe = which("ffprobe")
+
 def add_bg_from_local(image_file):
     with open(image_file, "rb") as image_file:
         encoded_string = base64.b64encode(image_file.read()).decode()
@@ -18,21 +27,8 @@ def add_bg_from_local(image_file):
         unsafe_allow_html=True
     )
 
-# function call to set the background
-add_bg_from_local('final.png') 
+add_bg_from_local('final.png')
 
-import speech_recognition as sr
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
-import torch
-from langdetect import detect
-from pydub import AudioSegment
-from pydub.utils import which
-
-
-AudioSegment.converter = which("ffmpeg")
-AudioSegment.ffprobe = which("ffprobe")
-
-# Loading models for sentiment analysis
 models = {
     "hi": ("ai4bharat/indic-bert", "positive", "negative"),  # Hindi
     "bn": ("ai4bharat/indic-bert", "positive", "negative"),  # Bengali
@@ -49,7 +45,7 @@ models = {
 }
 
 def load_model(language_code):
-    model_name, pos_label, neg_label = models.get(language_code, models["hi"])  # Default to Hindi
+    model_name, pos_label, neg_label = models.get(language_code, models["hi"])  #default to Hindi
     model = AutoModelForSequenceClassification.from_pretrained(model_name)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     return model, tokenizer
@@ -58,35 +54,32 @@ def transcribe_audio(file_path, language_code='en-US'):
     recognizer = sr.Recognizer()
     audio = AudioSegment.from_file(file_path)
     audio = audio.set_frame_rate(16000)
-    # Exporting as a WAV file
     audio.export("temp.wav", format="wav")
     with sr.AudioFile("temp.wav") as source:
         audio_data = recognizer.record(source)
-        # Specifying the language code for transcription
         text = recognizer.recognize_google(audio_data, language=language_code)
     return text
-
-def identify_language(text):
-    lang = detect(text)
-    return lang
 
 def analyze_sentiment(text, model, tokenizer):
     inputs = tokenizer(text, return_tensors="pt")
     outputs = model(**inputs)
     logits = outputs.logits
     probabilities = torch.nn.functional.softmax(logits, dim=-1)
-    sentiment = torch.argmax(probabilities, dim=-1).item()
-    
-    # Debugging output
+    sentiment = torch.argmax(probabilities, dim=-1).item()    
     st.write(f"Text: {text}")
-    #st.write(f"Logits: {logits}")
-    #st.write(f"Probabilities: {probabilities}")
     st.write(f"Sentiment: {sentiment}")    
     return sentiment
+
+def translate_to_english(text):
+    translator = Translator()
+    translated = translator.translate(text, dest='en')
+    return translated.text
 
 def main():
     st.title("Bhaav Anubhuti – A Multilingual Audio Sentiment Analysis")
     
+    lan = st.text_input("Enter the language code (e.g., 'hi-IN' for Hindi, 'te-IN' for Telugu, 'ta-IN' for Tamil, 'kn-IN' for Kannada, 'ml-IN' for Malayalam):", value='en')
+
     audio_file = st.file_uploader("Upload an audio file", type=["mp3", "wav", "m4a"])
     
     if audio_file is not None:
@@ -95,34 +88,24 @@ def main():
         
         st.audio("uploaded_audio.wav")
         
-        initial_text = transcribe_audio("uploaded_audio.wav", 'en-US')
-        #st.write(f"Initial text: {initial_text}")
-        
-        language = identify_language(initial_text)
-
-        language_code_map = {
-            "hi": "hi-IN", "bn": "bn-IN", "te": "te-IN", "mr": "mr-IN",
-            "ta": "ta-IN", "ur": "ur-IN", "gu": "gu-IN", "kn": "kn-IN",
-            "ml": "ml-IN", "pa": "pa-IN", "or": "or-IN", "as": "as-IN"
-        }
-        language_code = language_code_map.get(language, 'te-IN') 
-
-        text = transcribe_audio("uploaded_audio.wav", language_code)
+        text = transcribe_audio("uploaded_audio.wav", lan)
         st.markdown('<div class="content-box">', unsafe_allow_html=True)
         st.write(f"Transcribed text: {text}")
+        
+        model_language_code = lan.split('-')[0]
 
-        # Loading appropriate model for sentiment analysis
-        model, tokenizer = load_model(language)
-        sentiment = analyze_sentiment(text, model, tokenizer)
+        if lan != "en":
+            translated_text = translate_to_english(text)
+            st.write(f"Translated Text: {translated_text}")
+        else:
+            translated_text = text
+
+        model, tokenizer = load_model(lan)
+        sentiment = analyze_sentiment(translated_text, model, tokenizer)
         sentiment_label = "positive" if sentiment == 1 else "negative"
-        st.write(f"Detected language: {language}")
-        st.write(f"Text: {text}")
-        #st.write(f"Sentiment: {sentiment_label}")
         
         if sentiment_label == "positive":
-            st.success(f"Sentiment: {sentiment_label}")
-            emotions = te.get_emotion(text)
-            st.write(f"Emotions: {emotions}")
+            st.success(f"Sentiment: {sentiment_label}")            
             st.balloons()
         else:
             st.error(f"Sentiment: {sentiment_label}")
