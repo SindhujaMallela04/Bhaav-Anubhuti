@@ -2,6 +2,7 @@
 langdetect==1.0.9
 langid==1.1.6
 pydub==0.25.1
+sentencepiece==0.2.0
 SpeechRecognition==3.10.4
 streamlit==1.36.0
 streamlit-lottie==0.0.3
