@@ -88,12 +88,12 @@ def main():
         
         st.audio("uploaded_audio.wav")
         
-        with st.spinner("Transcribing and analyzing audio..."):
-            text = transcribe_audio("uploaded_audio.wav", lan)
-            st.markdown('<div class="content-box">', unsafe_allow_html=True)
-            st.write(f"Transcribed text: {text}")
+       
+        text = transcribe_audio("uploaded_audio.wav", lan)
+        st.markdown('<div class="content-box">', unsafe_allow_html=True)
+        st.write(f"Transcribed text: {text}")
             
-            model_language_code = lan.split('-')[0]
+        model_language_code = lan.split('-')[0]
 
             if lan != "en":
                 translated_text = translate_to_english(text)
@@ -101,9 +101,9 @@ def main():
             else:
                 translated_text = text
 
-            model, tokenizer = load_model(lan)
-            sentiment = analyze_sentiment(translated_text, model, tokenizer)
-            sentiment_label = "positive" if sentiment == 1 else "negative"
+                model, tokenizer = load_model(lan)
+                sentiment = analyze_sentiment(translated_text, model, tokenizer)
+                sentiment_label = "positive" if sentiment == 1 else "negative"
         
         if sentiment_label == "positive":
             st.success(f"Sentiment: {sentiment_label}")            
