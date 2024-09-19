@@ -66,7 +66,7 @@ def analyze_sentiment(text, model, tokenizer):
     logits = outputs.logits
     probabilities = torch.nn.functional.softmax(logits, dim=-1)
     sentiment = torch.argmax(probabilities, dim=-1).item()    
-    st.write(f"Text: {text}")
+    #st.write(f"Text: {text}")
     st.write(f"Sentiment: {sentiment}")    
     return sentiment
 
